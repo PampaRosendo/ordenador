@@ -218,7 +218,127 @@
     });
   }
 </script>
- 
+
+<!-- Sección anterior aquí... (omitida por brevedad) -->
+
+<!-- NUEVA SECCIÓN: CREADOR DE FACCIONES -->
+<hr style="margin-top: 60px;">
+<h1 style="text-align: center; color: #ff4444;">🏴 Creador de Facciones</h1>
+
+<form id="formulario-faccion">
+  <label>Nombre de la facción:</label>
+  <input type="text" id="faccion-nombre" required>
+
+  <label>Descripción:</label>
+  <textarea id="faccion-desc" rows="4" required placeholder="Describe la misión, valores o historia de la facción..."></textarea>
+
+  <label>Tag o sigla:</label>
+  <input type="text" id="faccion-tag" maxlength="10" required>
+
+  <label>Imagen de la facción (opcional):</label>
+  <input type="file" id="faccion-img" accept="image/*">
+
+  <button type="submit">Crear y Publicar Facción</button>
+</form>
+
+<div class="ficha hidden" id="resultado-faccion">
+  <h2>📢 Facción creada</h2>
+  <p><strong>Nombre:</strong> <span id="r-faccion-nombre"></span></p>
+  <p><strong>Tag:</strong> <span id="r-faccion-tag"></span></p>
+  <p><strong>Descripción:</strong><br><span id="r-faccion-desc"></span></p>
+  <div id="r-faccion-img"></div>
+</div>
+
+<script>
+  const faccionWebhook = "https://discordapp.com/api/webhooks/1395070132295827488/Jejokc-3dPMcti6pGN2hkiI-NGR3b5z_Lbj2SBb2fG9nWob5OnI2f6mxnhAfHJygMkmf"; // reemplazar por tu webhook real
+
+  document.getElementById("formulario-faccion").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const nombre = document.getElementById("faccion-nombre").value;
+    const descripcion = document.getElementById("faccion-desc").value;
+    const tag = document.getElementById("faccion-tag").value;
+    const imagenInput = document.getElementById("faccion-img");
+    const resultadoDiv = document.getElementById("resultado-faccion");
+    const rImg = document.getElementById("r-faccion-img");
+
+    document.getElementById("r-faccion-nombre").textContent = nombre;
+    document.getElementById("r-faccion-tag").textContent = tag;
+    document.getElementById("r-faccion-desc").textContent = descripcion;
+    rImg.innerHTML = "";
+
+    if (imagenInput.files.length > 0) {
+      const file = imagenInput.files[0];
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        const base64Image = reader.result;
+        const imgElement = document.createElement("img");
+        imgElement.src = base64Image;
+        imgElement.style.maxWidth = "300px";
+        imgElement.style.marginTop = "10px";
+        rImg.appendChild(imgElement);
+
+        // Enviar a Discord con imagen embebida
+        const payload = {
+          embeds: [
+            {
+              title: `🏴 Nueva Facción: ${nombre}`,
+              description: descripcion,
+              color: 16711680,
+              fields: [
+                {
+                  name: "Tag",
+                  value: tag
+                }
+              ],
+              image: {
+                url: base64Image
+              }
+            }
+          ]
+        };
+
+        fetch(faccionWebhook, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }).then(res => {
+          if (res.ok) {
+            alert("Facción enviada correctamente a Discord ✅");
+          } else {
+            alert("Error al enviar la facción ❌");
+          }
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Enviar sin imagen
+      const payload = {
+        content: `🏴 **Nueva Facción:** ${nombre}\n**Tag:** ${tag}\n${descripcion}`
+      };
+
+      fetch(faccionWebhook, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }).then(res => {
+        if (res.ok) {
+          alert("Facción enviada correctamente a Discord ✅");
+        } else {
+          alert("Error al enviar la facción ❌");
+        }
+      });
+    }
+
+    resultadoDiv.classList.remove("hidden");
+  });
+</script>
+
+  
  <hr>
 
   <footer style="background-color: #121212; color: #e0e0e0; padding: 40px 20px; font-family: 'Segoe UI', sans-serif;">
