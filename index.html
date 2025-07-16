@@ -1,3 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creador de Personajes - Zomboid</title>
+  <style>
+    body {
+      background: #1c1c1c;
+      color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #ff4444;
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      background: #2c2c2c;
+      color: white;
+      border: 1px solid #444;
+      border-radius: 5px;
+    }
+    button {
+      background: #ff4444;
+      border: none;
+      padding: 10px 20px;
+      color: white;
+      font-weight: bold;
+      margin-top: 20px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #ff6666;
+    }
+    .ficha {
+      margin-top: 30px;
+      padding: 20px;
+      background: #222;
+      border-left: 4px solid #ff4444;
+    }
+    .ficha h2 {
+      margin-top: 0;
+      color: #ff4444;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎮 Creador de Personajes - TerraZ</h1>
+
+<form id="formulario">
+  <label>Nombre del personaje:</label>
+  <input type="text" id="nombre" required>
+
+  <label>Edad:</label>
+  <input type="number" id="edad" min="10" max="100" required>
+
+  <label>Profesión:</label>
+  <select id="profesion">
+    <option value="Bombero">Bombero</option>
+    <option value="Policía">Policía</option>
+    <option value="Doctor">Doctor</option>
+    <option value="Sobreviviente solitario">Sobreviviente solitario</option>
+    <option value="Carpintero">Carpintero</option>
+    <option value="Cazador">Cazador</option>
+  </select>
+
+  <label>Historia del personaje:</label>
+  <textarea id="historia" rows="5" placeholder="Escribí la historia previa del personaje..."></textarea>
+
+  <label>Imagen de personaje (opcional):</label>
+  <input type="file" id="imagen" accept="image/*">
+
+  <button type="submit">Generar ficha</button>
+</form>
+
+<div class="ficha hidden" id="resultado">
+  <h2>🧍 Ficha de personaje</h2>
+  <p><strong>Nombre:</strong> <span id="r-nombre"></span></p>
+  <p><strong>Edad:</strong> <span id="r-edad"></span></p>
+  <p><strong>Profesión:</strong> <span id="r-profesion"></span></p>
+  <p><strong>Historia:</strong><br><span id="r-historia"></span></p>
+  <div id="r-imagen"></div>
+  <button onclick="descargarFicha()">📥 Descargar Ficha</button>
+  <button onclick="copiarParaDiscord()">📋 Copiar para Discord</button>
+  <button onclick="enviarADiscord()">🚀 Publicar en Discord</button>
+</div>
+
 <script>
   let fichaData = {};
   let ultimoEnvio = 0; // Marca de tiempo del último envío
@@ -115,3 +218,6 @@
     });
   }
 </script>
+
+</body>
+</html>
