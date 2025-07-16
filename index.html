@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ordenador de Mods - Project Zomboid</title>
+  <style>
+    body {
+      background: #1e1e1e;
+      color: #eee;
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff5555;
+    }
+
+    textarea, input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      background: #2b2b2b;
+      color: #fff;
+      border: 1px solid #555;
+      margin-top: 10px;
+      resize: vertical;
+    }
+
+    button {
+      background: #ff5555;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #ff7777;
+    }
+
+    .output {
+      white-space: pre-wrap;
+      background: #111;
+      padding: 10px;
+      margin-top: 20px;
+      border-left: 4px solid #ff5555;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Ordenador de Mods PZ</h1>
+<p>Pegá o cargá tu lista de mods (WorkshopID=... / ModID=...) y se ordenarán automáticamente.</p>
+
+<textarea id="inputMods" rows="10" placeholder="WorkshopItems=...\nMods=..."></textarea>
+<input type="file" id="fileInput">
+<br>
+<button onclick="procesar()">Ordenar</button>
+<button onclick="copiar()">Copiar Resultado</button>
+
+<div class="output" id="resultado"></div>
+
+<script>
+const categorias = {
+  "Resources/Textures": ["resource", "texture"],
+  "Maps/Locations": ["map", "location"],
+  "Transportation": ["vehicle", "car", "transport"],
+  "Framework/API/Tweak mods": ["api", "framework", "lib"],
+  "Code-only mods": ["tweak", "patch", "balance"],
+  "Clothing": ["clothing", "outfit", "apparel"],
+  "Interface": ["hud", "ui", "interface"],
+  "Localization": ["translation", "localization", "lang"],
+  "Other mods": []
+};
+
+function detectarCategoria(nombre) {
+  const lname = nombre.toLowerCase();
+  for (let cat in categorias) {
+    if (categorias[cat].some(palabra => lname.includes(palabra))) {
+      return cat;
+    }
+  }
+  return "Other mods";
+}
+
+function procesar() {
+  const texto = document.getElementById('inputMods').value;
+  const modLines = texto.split(/\n|,/).map(e => e.trim()).filter(Boolean);
+
+  const mods = [];
+  let workshopLine = modLines.find(e => e.toLowerCase().includes("workshopitems="));
+  let modidLine = modLines.find(e => e.toLowerCase().includes("mods="));
+
+  if (workshopLine && modidLine) {
+    const wsids = workshopLine.split("=")[1].split(";").map(e => e.trim());
+    const mids = modidLine.split("=")[1].split(";").map(e => e.trim());
+
+    for (let i = 0; i < wsids.length; i++) {
+      mods.push({
+        modid: mids[i] || "Unknown",
+        workshop: wsids[i] || "Unknown",
+        categoria: detectarCategoria(mids[i] || "")
+      });
+    }
+
+    // Agrupar por categoría
+    const porCategoria = {};
+    mods.forEach(mod => {
+      if (!porCategoria[mod.categoria]) porCategoria[mod.categoria] = [];
+      porCategoria[mod.categoria].push(mod);
+    });
+
+    // Crear resultado
+    let salida = "";
+    for (let cat of Object.keys(categorias)) {
+      if (porCategoria[cat]) {
+        salida += `== ${cat} ==\n`;
+        porCategoria[cat].forEach(mod => {
+          salida += `ModID: ${mod.modid} | WorkshopID: ${mod.workshop}\n`;
+        });
+        salida += "\n";
+      }
+    }
+
+    document.getElementById('resultado').innerText = salida.trim();
+  } else {
+    document.getElementById('resultado').innerText = "Faltan líneas de Mods= y WorkshopItems=";
+  }
+}
+
+function copiar() {
+  const res = document.getElementById('resultado').innerText;
+  navigator.clipboard.writeText(res).then(() => {
+    alert("¡Copiado al portapapeles!");
+  });
+}
+
+document.getElementById("fileInput").addEventListener("change", function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('inputMods').value = e.target.result;
+  };
+  reader.readAsText(file);
+});
+</script>
+
+</body>
+</html>
