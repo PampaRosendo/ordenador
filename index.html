@@ -103,6 +103,8 @@
 
 <script>
   let fichaData = {};
+  let ultimoEnvio = 0; // Marca de tiempo del último envío
+  const cooldownTiempo = 60000; // 60 segundos en milisegundos
 
   document.getElementById("formulario").addEventListener("submit", function(e) {
     e.preventDefault();
@@ -166,6 +168,16 @@
   }
 
   function enviarADiscord() {
+    const tiempoActual = Date.now();
+    const tiempoRestante = cooldownTiempo - (tiempoActual - ultimoEnvio);
+
+    if (tiempoRestante > 0) {
+      // Si el cooldown está activo, muestra un mensaje con el tiempo restante
+      const segundosRestantes = Math.ceil(tiempoRestante / 1000);
+      alert(`Por favor espera ${segundosRestantes} segundos antes de enviar otra ficha.`);
+      return;
+    }
+
     const webhookURL = "https://discord.com/api/webhooks/1394918125778243594/TYi1krzy42AmGzujT4HTGB6AVgXDwb-AStrTTSVXEF3qnaFQ8lC0VBc7jIJyKvWM6xvO"; // 🔁 Pegá aquí tu webhook URL
 
     const contenido = {
@@ -184,6 +196,7 @@
       body: JSON.stringify(contenido)
     }).then(response => {
       if (response.ok) {
+        ultimoEnvio = tiempoActual; // Actualiza el tiempo del último envío
         alert("Ficha publicada en Discord correctamente ✅");
       } else {
         alert("Error al publicar en Discord ❌");
