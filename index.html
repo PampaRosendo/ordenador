@@ -21,24 +21,16 @@ function detectarCategoria(nombre) {
   return "Other mods";
 }
 
-function procesar() {
-  const texto = document.getElementById('inputMods').value;
-  const lineas = texto.split(/\n/).map(e => e.trim());
+function extraerModData(texto) {
+  let modLine = texto.match(/Mods=([^\n\r]*)/i);
+  let workshopLine = texto.match(/WorkshopItems=([^\n\r]*)/i);
 
-  let modLine = lineas.find(line => line.toLowerCase().startsWith("mods="));
-  let workshopLine = lineas.find(line => line.toLowerCase().startsWith("workshopitems="));
-
-  if (!modLine && !workshopLine) {
-    document.getElementById('resultado').innerText = "No se encontraron líneas Mods= o WorkshopItems=";
-    return;
-  }
-
-  const modList = modLine ? modLine.split("=")[1].split(";").map(e => e.trim()).filter(Boolean) : [];
-  const workshopList = workshopLine ? workshopLine.split("=")[1].split(";").map(e => e.trim()).filter(Boolean) : [];
+  const modList = modLine ? modLine[1].split(";").map(e => e.trim()).filter(Boolean) : [];
+  const workshopList = workshopLine ? workshopLine[1].split(";").map(e => e.trim()).filter(Boolean) : [];
 
   const mods = [];
 
-  // Si las listas tienen la misma cantidad, las alineamos por índice
+  // Si coinciden en cantidad, se emparejan
   if (modList.length === workshopList.length) {
     for (let i = 0; i < modList.length; i++) {
       mods.push({
@@ -48,7 +40,7 @@ function procesar() {
       });
     }
   } else {
-    // Si no, asignamos WorkshopID: Desconocido
+    // Si no coinciden, poner Workshop como "Desconocido"
     modList.forEach(mod => {
       mods.push({
         modid: mod,
@@ -58,14 +50,19 @@ function procesar() {
     });
   }
 
-  // Agrupar por categoría
+  return mods;
+}
+
+function procesar() {
+  const texto = document.getElementById('inputMods').value;
+  const mods = extraerModData(texto);
+
   const porCategoria = {};
   mods.forEach(mod => {
     if (!porCategoria[mod.categoria]) porCategoria[mod.categoria] = [];
     porCategoria[mod.categoria].push(mod);
   });
 
-  // Generar salida
   let salida = "";
   for (let cat of Object.keys(categorias)) {
     if (porCategoria[cat]) {
@@ -87,12 +84,16 @@ function copiar() {
   });
 }
 
-document.getElementById("fileInput").addEventListener("change", function() {
+// Detectar carga de archivo INI
+document.getElementById("fileInput").addEventListener("change", function () {
   const file = this.files[0];
   if (!file) return;
+
   const reader = new FileReader();
-  reader.onload = function(e) {
-    document.getElementById('inputMods').value = e.target.result;
+  reader.onload = function (e) {
+    const contenido = e.target.result;
+    document.getElementById('inputMods').value = contenido;
+    procesar(); // Auto procesar tras subir archivo
   };
   reader.readAsText(file);
 });
