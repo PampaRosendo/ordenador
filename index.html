@@ -1,100 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ordenador de Mods PZ</title>
+  <style>
+    body {
+      background: #1e1e1e;
+      color: #eee;
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff5555;
+    }
+
+    textarea, input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      background: #2b2b2b;
+      color: #fff;
+      border: 1px solid #555;
+      margin-top: 10px;
+      resize: vertical;
+    }
+
+    button {
+      background: #ff5555;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #ff7777;
+    }
+
+    .output {
+      white-space: pre-wrap;
+      background: #111;
+      padding: 10px;
+      margin-top: 20px;
+      border-left: 4px solid #ff5555;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Ordenador de Mods PZ</h1>
+<p>Pegá o cargá tu archivo <code>servertest.ini</code> y se ordenará automáticamente.</p>
+
+<textarea id="inputMods" rows="10" placeholder="Cargá o pegá contenido de servertest.ini acá"></textarea>
+<input type="file" id="fileInput" accept=".ini,.txt" />
+<br>
+<button onclick="procesar()">Ordenar</button>
+<button onclick="copiar()">Copiar Resultado</button>
+
+<div class="output" id="resultado"></div>
+
 <script>
-const categorias = {
-  "Resources/Textures": ["resource", "texture"],
-  "Maps/Locations": ["map", "location"],
-  "Transportation": ["vehicle", "car", "transport"],
-  "Framework/API/Tweak mods": ["api", "framework", "lib"],
-  "Code-only mods": ["tweak", "patch", "balance"],
-  "Clothing": ["clothing", "outfit", "apparel"],
-  "Interface": ["hud", "ui", "interface"],
-  "Localization": ["translation", "localization", "lang"],
-  "Other mods": []
-};
+  const categorias = {
+    "Resources/Textures": ["resource", "texture"],
+    "Maps/Locations": ["map", "location"],
+    "Transportation": ["vehicle", "car", "transport"],
+    "Framework/API/Tweak mods": ["api", "framework", "lib"],
+    "Code-only mods": ["tweak", "patch", "balance"],
+    "Clothing": ["clothing", "outfit", "apparel"],
+    "Interface": ["hud", "ui", "interface"],
+    "Localization": ["translation", "localization", "lang"],
+    "Other mods": []
+  };
 
-function detectarCategoria(nombre) {
-  const lname = nombre.toLowerCase();
-  for (let cat in categorias) {
-    if (categorias[cat].some(palabra => lname.includes(palabra))) {
-      return cat;
+  function detectarCategoria(nombre) {
+    const lname = nombre.toLowerCase();
+    for (let cat in categorias) {
+      if (categorias[cat].some(palabra => lname.includes(palabra))) {
+        return cat;
+      }
     }
+    return "Other mods";
   }
-  return "Other mods";
-}
 
-function extraerModData(texto) {
-  let modLine = texto.match(/Mods=([^\n\r]*)/i);
-  let workshopLine = texto.match(/WorkshopItems=([^\n\r]*)/i);
+  function extraerModData(texto) {
+    let modLine = texto.match(/Mods=([^\n\r]*)/i);
+    let workshopLine = texto.match(/WorkshopItems=([^\n\r]*)/i);
 
-  const modList = modLine ? modLine[1].split(";").map(e => e.trim()).filter(Boolean) : [];
-  const workshopList = workshopLine ? workshopLine[1].split(";").map(e => e.trim()).filter(Boolean) : [];
+    const modList = modLine ? modLine[1].split(";").map(e => e.trim()).filter(Boolean) : [];
+    const workshopList = workshopLine ? workshopLine[1].split(";").map(e => e.trim()).filter(Boolean) : [];
 
-  const mods = [];
+    const mods = [];
 
-  // Si coinciden en cantidad, se emparejan
-  if (modList.length === workshopList.length) {
-    for (let i = 0; i < modList.length; i++) {
-      mods.push({
-        modid: modList[i],
-        workshop: workshopList[i],
-        categoria: detectarCategoria(modList[i])
+    if (modList.length === workshopList.length) {
+      for (let i = 0; i < modList.length; i++) {
+        mods.push({
+          modid: modList[i],
+          workshop: workshopList[i],
+          categoria: detectarCategoria(modList[i])
+        });
+      }
+    } else {
+      modList.forEach(mod => {
+        mods.push({
+          modid: mod,
+          workshop: "Desconocido",
+          categoria: detectarCategoria(mod)
+        });
       });
     }
-  } else {
-    // Si no coinciden, poner Workshop como "Desconocido"
-    modList.forEach(mod => {
-      mods.push({
-        modid: mod,
-        workshop: "Desconocido",
-        categoria: detectarCategoria(mod)
-      });
+
+    return mods;
+  }
+
+  function procesar() {
+    const texto = document.getElementById('inputMods').value;
+    const mods = extraerModData(texto);
+
+    const porCategoria = {};
+    mods.forEach(mod => {
+      if (!porCategoria[mod.categoria]) porCategoria[mod.categoria] = [];
+      porCategoria[mod.categoria].push(mod);
+    });
+
+    let salida = "";
+    for (let cat of Object.keys(categorias)) {
+      if (porCategoria[cat]) {
+        salida += `== ${cat} ==\n`;
+        porCategoria[cat].forEach(mod => {
+          salida += `ModID: ${mod.modid} | WorkshopID: ${mod.workshop}\n`;
+        });
+        salida += "\n";
+      }
+    }
+
+    document.getElementById('resultado').innerText = salida.trim();
+  }
+
+  function copiar() {
+    const res = document.getElementById('resultado').innerText;
+    navigator.clipboard.writeText(res).then(() => {
+      alert("¡Copiado al portapapeles!");
     });
   }
 
-  return mods;
-}
+  document.getElementById("fileInput").addEventListener("change", function () {
+    const file = this.files[0];
+    if (!file) return;
 
-function procesar() {
-  const texto = document.getElementById('inputMods').value;
-  const mods = extraerModData(texto);
-
-  const porCategoria = {};
-  mods.forEach(mod => {
-    if (!porCategoria[mod.categoria]) porCategoria[mod.categoria] = [];
-    porCategoria[mod.categoria].push(mod);
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const contenido = e.target.result;
+      document.getElementById('inputMods').value = contenido;
+      procesar();
+    };
+    reader.readAsText(file);
   });
-
-  let salida = "";
-  for (let cat of Object.keys(categorias)) {
-    if (porCategoria[cat]) {
-      salida += `== ${cat} ==\n`;
-      porCategoria[cat].forEach(mod => {
-        salida += `ModID: ${mod.modid} | WorkshopID: ${mod.workshop}\n`;
-      });
-      salida += "\n";
-    }
-  }
-
-  document.getElementById('resultado').innerText = salida.trim();
-}
-
-function copiar() {
-  const res = document.getElementById('resultado').innerText;
-  navigator.clipboard.writeText(res).then(() => {
-    alert("¡Copiado al portapapeles!");
-  });
-}
-
-// Detectar carga de archivo INI
-document.getElementById("fileInput").addEventListener("change", function () {
-  const file = this.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    const contenido = e.target.result;
-    document.getElementById('inputMods').value = contenido;
-    procesar(); // Auto procesar tras subir archivo
-  };
-  reader.readAsText(file);
-});
 </script>
+
+</body>
+</html>
