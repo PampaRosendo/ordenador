@@ -235,8 +235,18 @@
   <label>Tag o sigla:</label>
   <input type="text" id="faccion-tag" maxlength="10" required>
 
-  <label>Imagen de la facción (opcional):</label>
-  <input type="file" id="faccion-img" accept="image/*">
+  <label>Dueño o líder de la facción:</label>
+  <input type="text" id="faccion-duenio" required>
+
+  <label>Tipo de facción:</label>
+  <select id="faccion-tipo" required>
+    <option value="PvE">PvE</option>
+    <option value="PvP">PvP</option>
+    <option value="Mixta">Mixta (PvE + PvP)</option>
+  </select>
+
+  <label>URL pública de imagen (opcional):</label>
+  <input type="url" id="faccion-img-url" placeholder="https://...">
 
   <button type="submit">Crear y Publicar Facción</button>
 </form>
@@ -245,12 +255,14 @@
   <h2>📢 Facción creada</h2>
   <p><strong>Nombre:</strong> <span id="r-faccion-nombre"></span></p>
   <p><strong>Tag:</strong> <span id="r-faccion-tag"></span></p>
+  <p><strong>Dueño:</strong> <span id="r-faccion-duenio"></span></p>
+  <p><strong>Tipo:</strong> <span id="r-faccion-tipo"></span></p>
   <p><strong>Descripción:</strong><br><span id="r-faccion-desc"></span></p>
   <div id="r-faccion-img"></div>
 </div>
 
 <script>
-  const faccionWebhook = "https://discordapp.com/api/webhooks/1395070132295827488/Jejokc-3dPMcti6pGN2hkiI-NGR3b5z_Lbj2SBb2fG9nWob5OnI2f6mxnhAfHJygMkmf"; // reemplazar por tu webhook real
+  const faccionWebhook = "AQUI_TU_WEBHOOK_DE_FACCIONES"; // reemplazar por tu webhook real
 
   document.getElementById("formulario-faccion").addEventListener("submit", function(e) {
     e.preventDefault();
@@ -258,81 +270,59 @@
     const nombre = document.getElementById("faccion-nombre").value;
     const descripcion = document.getElementById("faccion-desc").value;
     const tag = document.getElementById("faccion-tag").value;
-    const imagenInput = document.getElementById("faccion-img");
+    const duenio = document.getElementById("faccion-duenio").value;
+    const tipo = document.getElementById("faccion-tipo").value;
+    const imagenURL = document.getElementById("faccion-img-url").value;
+
     const resultadoDiv = document.getElementById("resultado-faccion");
     const rImg = document.getElementById("r-faccion-img");
 
     document.getElementById("r-faccion-nombre").textContent = nombre;
     document.getElementById("r-faccion-tag").textContent = tag;
+    document.getElementById("r-faccion-duenio").textContent = duenio;
+    document.getElementById("r-faccion-tipo").textContent = tipo;
     document.getElementById("r-faccion-desc").textContent = descripcion;
     rImg.innerHTML = "";
 
-    if (imagenInput.files.length > 0) {
-      const file = imagenInput.files[0];
-      const reader = new FileReader();
-      reader.onloadend = function() {
-        const base64Image = reader.result;
-        const imgElement = document.createElement("img");
-        imgElement.src = base64Image;
-        imgElement.style.maxWidth = "300px";
-        imgElement.style.marginTop = "10px";
-        rImg.appendChild(imgElement);
-
-        // Enviar a Discord con imagen embebida
-        const payload = {
-          embeds: [
-            {
-              title: `🏴 Nueva Facción: ${nombre}`,
-              description: descripcion,
-              color: 16711680,
-              fields: [
-                {
-                  name: "Tag",
-                  value: tag
-                }
-              ],
-              image: {
-                url: base64Image
-              }
-            }
-          ]
-        };
-
-        fetch(faccionWebhook, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        }).then(res => {
-          if (res.ok) {
-            alert("Facción enviada correctamente a Discord ✅");
-          } else {
-            alert("Error al enviar la facción ❌");
-          }
-        });
-      };
-      reader.readAsDataURL(file);
-    } else {
-      // Enviar sin imagen
-      const payload = {
-        content: `🏴 **Nueva Facción:** ${nombre}\n**Tag:** ${tag}\n${descripcion}`
-      };
-
-      fetch(faccionWebhook, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      }).then(res => {
-        if (res.ok) {
-          alert("Facción enviada correctamente a Discord ✅");
-        } else {
-          alert("Error al enviar la facción ❌");
-        }
-      });
+    if (imagenURL) {
+      const imgElement = document.createElement("img");
+      imgElement.src = imagenURL;
+      imgElement.style.maxWidth = "300px";
+      imgElement.style.marginTop = "10px";
+      rImg.appendChild(imgElement);
     }
+
+    // Preparar payload para Discord
+    const embed = {
+      title: `🏴 Nueva Facción: ${nombre}`,
+      description: descripcion,
+      color: 16711680,
+      fields: [
+        { name: "Tag", value: tag, inline: true },
+        { name: "Dueño", value: duenio, inline: true },
+        { name: "Tipo", value: tipo, inline: true }
+      ]
+    };
+
+    if (imagenURL) {
+      embed.image = { url: imagenURL };
+    }
+
+    const payload = { embeds: [embed] };
+
+    fetch(faccionWebhook, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    }).then(res => {
+      if (res.ok) {
+        alert("Facción enviada correctamente a Discord ✅");
+      } else {
+        alert("Error al enviar la facción ❌");
+      }
+    });
 
     resultadoDiv.classList.remove("hidden");
   });
