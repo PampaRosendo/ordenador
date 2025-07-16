@@ -1,164 +1,128 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ordenador de Mods PZ</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creador de Personajes - Zomboid</title>
   <style>
     body {
-      background: #1e1e1e;
-      color: #eee;
-      font-family: sans-serif;
-      padding: 20px;
-      max-width: 900px;
+      background: #1c1c1c;
+      color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      max-width: 800px;
       margin: auto;
+      padding: 20px;
     }
-
     h1 {
+      color: #ff4444;
       text-align: center;
-      color: #ff5555;
     }
-
-    textarea, input[type="file"] {
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, select, textarea {
       width: 100%;
       padding: 10px;
-      background: #2b2b2b;
-      color: #fff;
-      border: 1px solid #555;
-      margin-top: 10px;
-      resize: vertical;
-    }
-
-    button {
-      background: #ff5555;
+      margin-top: 5px;
+      background: #2c2c2c;
       color: white;
+      border: 1px solid #444;
+      border-radius: 5px;
+    }
+    button {
+      background: #ff4444;
       border: none;
       padding: 10px 20px;
-      margin-top: 10px;
+      color: white;
+      font-weight: bold;
+      margin-top: 20px;
       cursor: pointer;
     }
-
     button:hover {
-      background: #ff7777;
+      background: #ff6666;
     }
-
-    .output {
-      white-space: pre-wrap;
-      background: #111;
-      padding: 10px;
-      margin-top: 20px;
-      border-left: 4px solid #ff5555;
+    .ficha {
+      margin-top: 30px;
+      padding: 20px;
+      background: #222;
+      border-left: 4px solid #ff4444;
+    }
+    .ficha h2 {
+      margin-top: 0;
+      color: #ff4444;
+    }
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<h1>Ordenador de Mods PZ</h1>
-<p>Pegá o cargá tu archivo <code>servertest.ini</code> y se ordenará automáticamente.</p>
+<h1>🎮 Creador de Personajes - TerraZ</h1>
 
-<textarea id="inputMods" rows="10" placeholder="Cargá o pegá contenido de servertest.ini acá"></textarea>
-<input type="file" id="fileInput" accept=".ini,.txt" />
-<br>
-<button onclick="procesar()">Ordenar</button>
-<button onclick="copiar()">Copiar Resultado</button>
+<form id="formulario">
+  <label>Nombre del personaje:</label>
+  <input type="text" id="nombre" required>
 
-<div class="output" id="resultado"></div>
+  <label>Edad:</label>
+  <input type="number" id="edad" min="10" max="100" required>
+
+  <label>Profesión:</label>
+  <select id="profesion">
+    <option value="Bombero">Bombero</option>
+    <option value="Policía">Policía</option>
+    <option value="Doctor">Doctor</option>
+    <option value="Sobreviviente solitario">Sobreviviente solitario</option>
+    <option value="Carpintero">Carpintero</option>
+    <option value="Cazador">Cazador</option>
+  </select>
+
+  <label>Historia del personaje:</label>
+  <textarea id="historia" rows="5" placeholder="Escribí la historia previa del personaje..."></textarea>
+
+  <label>Imagen de personaje (opcional):</label>
+  <input type="file" id="imagen" accept="image/*">
+
+  <button type="submit">Generar ficha</button>
+</form>
+
+<div class="ficha hidden" id="resultado">
+  <h2>🧍 Ficha de personaje</h2>
+  <p><strong>Nombre:</strong> <span id="r-nombre"></span></p>
+  <p><strong>Edad:</strong> <span id="r-edad"></span></p>
+  <p><strong>Profesión:</strong> <span id="r-profesion"></span></p>
+  <p><strong>Historia:</strong><br><span id="r-historia"></span></p>
+  <div id="r-imagen"></div>
+</div>
 
 <script>
-  const categorias = {
-    "Resources/Textures": ["resource", "texture"],
-    "Maps/Locations": ["map", "location"],
-    "Transportation": ["vehicle", "car", "transport"],
-    "Framework/API/Tweak mods": ["api", "framework", "lib"],
-    "Code-only mods": ["tweak", "patch", "balance"],
-    "Clothing": ["clothing", "outfit", "apparel"],
-    "Interface": ["hud", "ui", "interface"],
-    "Localization": ["translation", "localization", "lang"],
-    "Other mods": []
-  };
+  document.getElementById("formulario").addEventListener("submit", function(e) {
+    e.preventDefault();
 
-  function detectarCategoria(nombre) {
-    const lname = nombre.toLowerCase();
-    for (let cat in categorias) {
-      if (categorias[cat].some(palabra => lname.includes(palabra))) {
-        return cat;
-      }
-    }
-    return "Other mods";
-  }
+    document.getElementById("r-nombre").textContent = document.getElementById("nombre").value;
+    document.getElementById("r-edad").textContent = document.getElementById("edad").value;
+    document.getElementById("r-profesion").textContent = document.getElementById("profesion").value;
+    document.getElementById("r-historia").textContent = document.getElementById("historia").value;
 
-  function extraerModData(texto) {
-    let modLine = texto.match(/Mods=([^\n\r]*)/i);
-    let workshopLine = texto.match(/WorkshopItems=([^\n\r]*)/i);
-
-    const modList = modLine ? modLine[1].split(";").map(e => e.trim()).filter(Boolean) : [];
-    const workshopList = workshopLine ? workshopLine[1].split(";").map(e => e.trim()).filter(Boolean) : [];
-
-    const mods = [];
-
-    if (modList.length === workshopList.length) {
-      for (let i = 0; i < modList.length; i++) {
-        mods.push({
-          modid: modList[i],
-          workshop: workshopList[i],
-          categoria: detectarCategoria(modList[i])
-        });
-      }
-    } else {
-      modList.forEach(mod => {
-        mods.push({
-          modid: mod,
-          workshop: "Desconocido",
-          categoria: detectarCategoria(mod)
-        });
-      });
+    const file = document.getElementById("imagen").files[0];
+    const rImagen = document.getElementById("r-imagen");
+    rImagen.innerHTML = "";
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.alt = "Personaje";
+        img.style.maxWidth = "200px";
+        img.style.marginTop = "15px";
+        rImagen.appendChild(img);
+      };
+      reader.readAsDataURL(file);
     }
 
-    return mods;
-  }
-
-  function procesar() {
-    const texto = document.getElementById('inputMods').value;
-    const mods = extraerModData(texto);
-
-    const porCategoria = {};
-    mods.forEach(mod => {
-      if (!porCategoria[mod.categoria]) porCategoria[mod.categoria] = [];
-      porCategoria[mod.categoria].push(mod);
-    });
-
-    let salida = "";
-    for (let cat of Object.keys(categorias)) {
-      if (porCategoria[cat]) {
-        salida += `== ${cat} ==\n`;
-        porCategoria[cat].forEach(mod => {
-          salida += `ModID: ${mod.modid} | WorkshopID: ${mod.workshop}\n`;
-        });
-        salida += "\n";
-      }
-    }
-
-    document.getElementById('resultado').innerText = salida.trim();
-  }
-
-  function copiar() {
-    const res = document.getElementById('resultado').innerText;
-    navigator.clipboard.writeText(res).then(() => {
-      alert("¡Copiado al portapapeles!");
-    });
-  }
-
-  document.getElementById("fileInput").addEventListener("change", function () {
-    const file = this.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const contenido = e.target.result;
-      document.getElementById('inputMods').value = contenido;
-      procesar();
-    };
-    reader.readAsText(file);
+    document.getElementById("resultado").classList.remove("hidden");
   });
 </script>
 
